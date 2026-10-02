@@ -1,0 +1,39 @@
+@if (auth.isAuthenticated()) {
+  <section aria-labelledby="home-title">
+    <h1 id="home-title">Support Ticket Management</h1>
+    <p>Manage customer support requests in one place.</p>
+  </section>
+} @else {
+  <div class="login-page">
+    <main class="login-main">
+      <div class="login-container">
+        <header class="login-brand">
+          <h1>Support Ticket Management</h1>
+          <p>Manage customer support requests<br class="desktop-break" /> in one place.</p>
+        </header>
+
+        <section class="auth-card" aria-labelledby="welcome-title" [attr.aria-busy]="auth.busy()">
+          <h2 id="welcome-title">Welcome back</h2>
+          <p class="login-message">Sign in with your Microsoft account to access your support tickets.</p>
+          @if (auth.error(); as message) {
+            <p class="auth-error" role="alert">{{ message }}</p>
+          }
+          <button type="button" class="microsoft-button" [disabled]="auth.busy()" (click)="auth.signIn()">
+            <svg class="microsoft-logo" viewBox="0 0 21 21" aria-hidden="true">
+              <path fill="#f25022" d="M0 0h10v10H0z" />
+              <path fill="#7fba00" d="M11 0h10v10H11z" />
+              <path fill="#00a4ef" d="M0 11h10v10H0z" />
+              <path fill="#ffb900" d="M11 11h10v10H11z" />
+            </svg>
+            <span>{{ auth.busy() ? 'Redirecting to Microsoft…' : 'Sign in with Microsoft' }}</span>
+          </button>
+          <p class="security-message">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10h12v10H6Z M8 10V7a4 4 0 0 1 8 0v3 M12 14v2" /></svg>
+            Secure authentication powered by Microsoft
+          </p>
+        </section>
+      </div>
+    </main>
+    <footer class="login-footer">© 2026 Support Ticket Management</footer>
+  </div>
+}

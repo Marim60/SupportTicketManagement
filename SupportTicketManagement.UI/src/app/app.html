@@ -1,0 +1,34 @@
+@if (auth.isAuthenticated()) {
+<header class="app-header">
+  <a class="brand" routerLink="/">Support Ticket Management</a>
+  @if (auth.isAuthenticated()) {
+    <div class="account-actions">
+      <span>{{ auth.displayName() }}</span>
+      <button type="button" [disabled]="auth.busy()" (click)="auth.signOut()">Sign out</button>
+    </div>
+  }
+</header>
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <nav aria-label="Main navigation">
+      <a routerLink="/tickets" routerLinkActive="active" ariaCurrentWhenActive="page">Tickets</a>
+    </nav>
+  </aside>
+  <main class="page-content">
+    @if (auth.error(); as error) { <p role="alert">{{ error }}</p> }
+    <router-outlet />
+  </main>
+</div>
+} @else {
+  <router-outlet />
+}
+
+<div class="toast-region" role="status" aria-live="polite" aria-atomic="true">
+  @if (tickets.notice(); as message) {
+    <div class="notice-toast">
+      <span class="toast-check" aria-hidden="true">✓</span>
+      <span>{{ message }}</span>
+    </div>
+  }
+</div>

@@ -1,0 +1,146 @@
+<section aria-labelledby="tickets-title">
+  <div class="page-heading">
+    <h2 id="tickets-title">Tickets</h2>
+    <button type="button" (click)="openCreate()">Create Ticket</button>
+  </div>
+
+  <form class="filters" [formGroup]="filters" (ngSubmit)="applyFilters()">
+    <div class="field search-field">
+      <label for="ticket-search">Search</label>
+      <input id="ticket-search" type="search" formControlName="search" placeholder="Title or customer email" />
+    </div>
+    <div class="field">
+      <label for="ticket-status">Status</label>
+      <select id="ticket-status" formControlName="status">
+        <option value="">All statuses</option>
+        @for (status of statuses; track status) {
+          <option [value]="status">{{ statusLabel(status) }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label for="ticket-priority">Priority</label>
+      <select id="ticket-priority" formControlName="priority">
+        <option value="">All priorities</option>
+        @for (priority of priorities; track priority) {
+          <option [value]="priority">{{ priority }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label for="ticket-page-size">Tickets per page</label>
+      <select id="ticket-page-size" formControlName="pageSize">
+        @for (size of pageSizes; track size) {
+          <option [ngValue]="size">{{ size }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-actions">
+      <button type="submit">Search</button>
+      <button type="button" class="secondary" (click)="clearFilters()">Clear</button>
+    </div>
+  </form>
+
+  <div class="results" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <p role="status">Loading tickets…</p>
+    } @else if (error(); as message) {
+      <div role="alert">
+        <p>{{ message }}</p>
+        <button type="button" (click)="retry()">Try again</button>
+      </div>
+    } @else if (result(); as data) {
+      @if (data.items.length === 0) {
+        <p role="status">
+          {{ hasFilters() ? 'No tickets match your filters.' : 'You do not have any tickets yet.' }}
+        </p>
+      } @else {
+        <p class="result-count" role="status">Showing {{ firstItem() }}–{{ lastItem() }} of {{ data.totalCount }} tickets</p>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Tickets table">
+          <table>
+            <caption class="visually-hidden">Your support tickets, newest first</caption>
+            <thead>
+              <tr>
+                <th scope="col"><span class="visually-hidden">Details</span></th>
+                <th scope="col">ID</th>
+                <th scope="col">Title</th>
+                <th scope="col">Customer email</th>
+                <th scope="col">Status</th>
+                <th scope="col">Priority</th>
+                <th scope="col">Created</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (ticket of data.items; track ticket.id) {
+                <tr>
+                  <td class="expand-cell">
+                    <button type="button" class="icon-button" [attr.aria-label]="(expandedIds().has(ticket.id) ? 'Collapse' : 'Expand') + ' details for ticket #' + ticket.id" [attr.aria-expanded]="expandedIds().has(ticket.id)" [attr.aria-controls]="'details-' + ticket.id" (click)="toggleDetails(ticket.id)">
+                      <svg viewBox="0 0 24 24" aria-hidden="true" [class.rotated]="expandedIds().has(ticket.id)"><path d="m9 5 7 7-7 7" /></svg>
+                    </button>
+                  </td>
+                  <td>#{{ ticket.id }}</td>
+                  <td class="ticket-title">{{ ticket.title }}</td>
+                  <td>{{ ticket.customerEmail }}</td>
+                  <td><span class="badge" [attr.data-status]="ticket.status">{{ statusLabel(ticket.status) }}</span></td>
+                  <td><span class="badge" [attr.data-priority]="ticket.priority">{{ ticket.priority }}</span></td>
+                  <td class="date">{{ ticket.createdAt | date:'mediumDate' }}</td>
+                  <td>
+                    <div class="row-actions">
+                      <button type="button" class="icon-button" title="Edit ticket" [attr.aria-label]="'Edit ticket #' + ticket.id" [disabled]="deletingId() !== null" (click)="openEdit(ticket)">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6Z M14 5l5 5" /></svg>
+                      </button>
+                      <button type="button" class="icon-button delete-button" [title]="deletingId() === ticket.id ? 'Deleting…' : 'Delete ticket'" [attr.aria-label]="'Delete ticket #' + ticket.id" [attr.aria-busy]="deletingId() === ticket.id" [disabled]="deletingId() !== null" (click)="deleteTicket(ticket)">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7" /></svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                @if (expandedIds().has(ticket.id)) {
+                  <tr class="details-row" [id]="'details-' + ticket.id">
+                    <td colspan="8">
+                      <div class="inline-details">
+                        <h3>Ticket #{{ ticket.id }} details</h3>
+                        <h4>Description</h4>
+                        <p class="description">{{ ticket.description || 'No description provided.' }}</p>
+                        <dl>
+                          <dt>Created</dt><dd>{{ ticket.createdAt | date:'medium' }}</dd>
+                          <dt>Last updated</dt><dd>{{ ticket.updatedAt ? (ticket.updatedAt | date:'medium') : 'Not updated yet' }}</dd>
+                        </dl>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        <nav class="pagination" aria-label="Tickets pagination">
+          <button type="button" class="secondary" [disabled]="data.page <= 1" (click)="changePage(data.page - 1)">Previous</button>
+          <span>Page {{ data.page }} of {{ data.totalPages }}</span>
+          <button type="button" class="secondary" [disabled]="data.page >= data.totalPages" (click)="changePage(data.page + 1)">Next</button>
+        </nav>
+      }
+    }
+  </div>
+</section>
+
+<dialog #createDialog class="create-dialog" aria-labelledby="create-title" (cancel)="cancelCreate($event)">
+  <div class="modal-header">
+    <h2 id="create-title">{{ editingTicket() ? 'Edit ticket' : 'New ticket' }}</h2>
+    <button type="button" class="secondary" aria-label="Close ticket dialog" [disabled]="modalBusy()" (click)="closeCreate()">×</button>
+  </div>
+  @if (modalOpen()) {
+    <app-ticket-form [ticket]="editingTicket()" (busyChange)="modalBusy.set($event)" (closed)="closeCreate()" (saved)="ticketSaved()" />
+  }
+</dialog>
+
+<dialog #deleteDialog class="delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-description" (cancel)="cancelDelete($event)" [attr.aria-busy]="deletingId() !== null">
+  <h2 id="delete-title">Are you sure you want to delete this ticket?</h2>
+  <div class="delete-dialog-actions">
+    <button type="button" class="secondary" autofocus [disabled]="deletingId() !== null" (click)="closeDelete()">Cancel</button>
+    <button type="button" class="danger-button" [disabled]="deletingId() !== null" (click)="confirmDelete()">
+      {{ deletingId() !== null ? 'Deleting…' : 'Confirm' }}
+    </button>
+  </div>
+</dialog>
